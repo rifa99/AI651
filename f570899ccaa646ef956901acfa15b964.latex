@@ -1,0 +1,460 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\textbf{Response 1A}
+
+\textbf{Prediction before Output 1.1:} Before seeing the results, I
+expected Period-routed Ridge to perform best because it can use a
+different linear model for different periods. I expected Raw Attention
+to do reasonably well on the established stations, but I was less
+confident about its performance on the held-out Station 4. I expected
+the two non-routed ridge models to perform worse because they cannot
+directly account for the different product speeds.
+
+\textbf{Results and revised ordering:} The results supported the first
+part of this prediction. On the established-station validation split
+(Stations 1--3), the ranking was \textbf{Period-routed Ridge (RMSE
+0.166) \textgreater{} Raw Attention (0.428) \textgreater{} Shared Ridge
+(0.767) ≈ Sensor-specific Ridge (0.768)}. On the held-out Station 4
+validation split, the ranking was \textbf{Period-routed Ridge (0.173)
+\textgreater{} Raw Attention (0.632) \textgreater{} Shared Ridge
+(0.876)}. Sensor-specific Ridge was not available for Station 4 because
+that station was held out during fitting.
+
+Period-routed Ridge was much better than Raw Attention. On the
+established validation split, its RMSE was about 61\% lower than Raw
+Attention, and on the held-out validation split it was about 73\% lower.
+The improvement was also consistent across the three products. For
+established stations, Period-routed Ridge had RMSEs of 0.181, 0.164, and
+0.152 for Products A, B, and C, compared with 0.392, 0.470, and 0.420
+for Raw Attention.
+
+This changed my initial expectation that the more flexible attention
+model might be competitive with period routing. The results suggest that
+explicitly using the known period information was more useful than
+relying on attention to learn the different temporal patterns.
+
+\includegraphics[width=6.5in,height=3.69167in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image1.png}
+
+Figure 1.2: Validation RMSE comparison across the four forecasting
+models for Station 1, Products A and C.
+
+\textbf{Response 1B}
+
+Output 1.2 shows the problem with using one fixed ridge matrix. For
+Station 1, Product A has an actual period of about 16.1 samples, while
+Product C has a period of about 30.1 samples. The same matrix has to use
+the same temporal weights for both products. Therefore, weights that are
+useful for one pace may correspond to a different phase of the pattern
+at another pace. The model has to compromise, which can affect both the
+phase and shape of the forecast.
+
+For example, on Station 1, Period-routed Ridge had RMSEs of 0.232 for
+Product A and 0.150 for Product C, while Shared Ridge had RMSEs of 0.779
+and 0.448.
+
+Attention is different because its weights depend on the input context.
+The same learned WQW\_Q, WKW\_K, and WVW\_V matrices are used, but the
+queries and keys produced from different contexts can be different. This
+changes the attention scores and therefore the final attention weights.
+
+In Output 1.3, the mean absolute difference between the attention
+weights for Station 1 Products A and C was 0.012, with a maximum
+difference of 0.415. A ridge model, in contrast, keeps fixed
+coefficients for a given routing choice. This shows that attention
+changes its mixing based on the context; it does not show that attention
+recovered the actual physical period.
+
+\includegraphics[width=6.5in,height=1.85417in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image2.png}
+
+Figure 1.3: Difference in attention weights between Station 1 contexts
+for Product A and Product C.
+
+\hypertarget{response-2}{%
+\subsubsection{Response 2}\label{response-2}}
+
+The selected moving-average width was \textbf{41}. In Output 2.1,
+increasing the width changed how much of the signal was treated as
+trend. The residual standard deviation increased from 0.578 at width 17
+to 1.572 at width 41, while the trend range stayed around 8.0--8.8.
+
+\includegraphics[width=6.5in,height=1.68194in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image3.png}
+
+Figure 2.1: Effect of moving-average decomposition width on residual
+variation and trend range.
+
+The diagnostic in Output 2.2 selected width 41 because it recovered the
+oracle period most accurately: \textbf{99.8\% of the periods were within
+one sample}, compared with 68.7\% for the raw signal.
+
+\includegraphics[width=6.5in,height=2.82708in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image4.png}
+
+Figure 2.2: Oracle period-recovery accuracy for the raw signal and
+different moving-average widths.
+
+The decomposition also improved the forecasting results. On the
+established-station validation split (Stations 1--3), Raw Attention had
+RMSE \textbf{0.428} and MSE \textbf{0.184}, while Attention +
+decomposition had RMSE \textbf{0.308} and MSE \textbf{0.095}. The
+improvement was also seen on the held-out Station 4 validation split,
+where RMSE decreased from \textbf{0.632 to 0.457}. The product-level
+results also improved for A, B, and C.
+
+\includegraphics[width=6.5in,height=3.69167in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image5.png}
+
+Figure 2.3: Validation performance of Raw Attention and Attention +
+Decomposition across Products A, B, and C.
+
+A moving average makes sense here because the data contains a slower
+changing component as well as repeated patterns. It gives the model a
+separate trend component instead of making attention learn both types of
+variation from the same input. The oracle diagnostic is useful for
+choosing the width because it gives a direct way to check whether the
+decomposition is preserving the known periodic structure. It is only
+used as an offline diagnostic, not as information given to the
+forecasting model.
+
+One limitation is that a moving average may not work well with sudden
+changes or isolated events. A sharp transition can be spread across both
+the trend and residual components. In that case, a different
+decomposition method, such as a learned or more local decomposition,
+could be more suitable.
+
+\hypertarget{response-3}{%
+\subsubsection{Response 3}\label{response-3}}
+
+The worked example in Output 3.1 confirmed the direction used for the
+delays. For delays 0--3, the FFT-based scores matched the direct
+calculation exactly: \textbf{4, -4, 4, -4}. The aggregation example also
+confirmed that a delay of dd uses the value at (t−d)(t-d) modulo the
+context length.
+
+For Station 2, Product A, Output 3.2 showed strong recurrence at delays
+close to the product period and its multiple. The expected period was
+about \textbf{16.1 samples}, and the nearest delay was 16 with a
+residual-signal correlation of \textbf{0.896}. At twice the period, the
+expected delay was about 32 samples and the correlation was
+\textbf{0.897}. This indicates that both the main period and its
+multiple are useful delays.
+
+\includegraphics[width=6.5in,height=1.66111in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image6.png}
+
+Figure 3.2: Residual-signal correlation at delays corresponding to the
+dominant period and its multiple for Station 2, Product A.
+
+Decomposing the signal first makes this evidence easier to see because
+the slower changing component has been removed. The remaining signal
+contains more of the repeated pattern, so delay mixing can focus on past
+values that occur at similar phases.
+
+This approach can fail when the signal does not have stable recurrence.
+For example, an aperiodic event, a rapidly changing period, or a
+one-time transient would not be well represented by a small set of fixed
+delays. Also, the correlations in Output 3.2 are \textbf{signal-level
+diagnostics}, not learned model attention or delay scores.
+
+\hypertarget{response-4}{%
+\subsubsection{Response 4}\label{response-4}}
+
+\textbf{Prediction before Output 4.1.} I expected decomposition to help
+most when the slow component was strong because separating it should
+make the repeated pattern easier to model. I also expected delay mixing
+to help because the data has clear periodic recurrence.
+
+On the established-station validation split (Stations 1--3), the RMSEs
+were \textbf{0.767} for Shared Ridge, \textbf{0.768} for Sensor-specific
+Ridge, \textbf{0.166} for Period-routed Ridge, \textbf{0.428} for Raw
+Attention, \textbf{0.219} for Raw Delay Mixer, \textbf{0.308} for
+Attention + Decomposition, and \textbf{0.197} for the
+Autoformer-inspired model. On the held-out Station 4 validation split,
+the corresponding available RMSEs were \textbf{0.876, 0.173, 0.632,
+0.336, 0.457, and 0.242}.
+
+\includegraphics[width=6.5in,height=3.69167in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image7.png}
+
+Figure 4.1: Validation RMSE comparison for the four neural models and
+linear baselines on established and held-out stations.
+
+Delay mixing gave a larger improvement than decomposition alone.
+Combining both gave the best neural result on both populations. The
+horizon-wise results in Output 4.2 also show how these differences
+change across the 48 forecast steps.
+
+\includegraphics[width=6.5in,height=2.11181in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image8.png}
+
+Figure 4.2: Horizon-wise forecasting error across the 48-step prediction
+horizon.
+
+For deployment, I selected \textbf{Period-routed Ridge} for both
+established stations and Station 4. It had the lowest validation RMSE
+(\textbf{0.166} and \textbf{0.173}) while using only \textbf{59,904
+parameters} and taking \textbf{0.013 s} to fit, compared with 373,026
+parameters and 103.896 s for the Autoformer-inspired model. This makes
+it the better practical choice despite the stronger neural model.
+
+\hypertarget{data-processing-and-validation}{%
+\subsubsection{2.1 Data Processing and
+Validation}\label{data-processing-and-validation}}
+
+The training data contains \textbf{43,656 observations}, while the
+hidden test set contains \textbf{168 observations}. The external dataset
+contains \textbf{43,824 rows and 10 features}, so these features are
+also available for the full forecast period.
+
+I used the target series together with the external features when
+running the external-data version of the model. The target was
+normalized using statistics from the training data. The normalized
+target range in the training data was approximately \textbf{-1.08 to
+9.86}.
+
+For validation, I used a chronological split rather than randomly
+shuffling the time series. The training portion contained \textbf{43,488
+target observations}, followed by a validation horizon of \textbf{168
+observations}, covering indices \textbf{43,489 to 43,656}. This keeps
+the validation period after the training period and avoids using future
+observations during training.
+
+The model used a context length of \textbf{512 observations} and
+predicted \textbf{168 points} at a time. This gives the model enough
+history to capture the short-term temporal patterns while keeping the
+forecast horizon equal to the required leaderboard horizon.
+
+For the final forecast, I retrained using the full available target
+history. The final training set contained \textbf{43,656 observed target
+values}, and the model then predicted the hidden 168 points. The
+submitted forecast therefore covers exactly indices \textbf{43,657
+through 43,824}.
+
+\hypertarget{autoformer-architecture}{%
+\subsubsection{2.2 Autoformer
+Architecture}\label{autoformer-architecture}}
+
+I used an Autoformer-style model based on two main ideas: \textbf{series
+decomposition} and \textbf{time-delay aggregation}. The input sequence
+is first separated into a trend component and a residual/seasonal
+component using moving-average decomposition. This lets the model handle
+the slower changes in the series separately from the repeating patterns.
+
+The main dependency mechanism is Auto-Correlation rather than standard
+pointwise self-attention. The model compares the sequence at different
+time delays and uses the strongest delays to aggregate information from
+earlier parts of the sequence. This is useful for this dataset because
+the target has strong short-lag correlation and clear periodic behavior.
+
+The model uses a context of \textbf{512 time steps} and produces exactly
+\textbf{168 forecast points}. External features can be provided
+alongside the target sequence, and I trained both versions of the model:
+one using only the target and one using the target together with the 10
+external features.
+
+The model was trained using chronological training and validation data.
+I also used multiple random seeds (\textbf{42, 123, and 2026}) to check
+whether the results were consistent across different initializations.
+
+\hypertarget{training-setup-and-multi-seed-results}{%
+\subsubsection{2.3 Training Setup and Multi-Seed
+Results}\label{training-setup-and-multi-seed-results}}
+
+I trained the model with three different random seeds: \textbf{42, 123,
+and 2026}. The purpose was to check whether the results were strongly
+dependent on the initial random initialization.
+
+For the target-only version, the best validation RMSEs were
+\textbf{83.55} for seed 42, \textbf{82.37} for seed 123, and
+\textbf{81.07} for seed 2026. The external-data version performed
+substantially better. Its best validation RMSEs were \textbf{52.48} for
+seed 42, \textbf{36.75} for seed 123, and \textbf{39.13} for seed 2026.
+
+These results show a clear benefit from including the external features
+on the chronological validation split. The best external-data run was
+seed 123, which reached an RMSE of \textbf{36.75} at epoch 16. The
+original selected checkpoint from seed 42 reached a validation RMSE of
+\textbf{52.48} at epoch 2.
+
+The results also varied across seeds, so using a single run would not
+give a complete picture of model performance. The multi-seed experiment
+provides a better indication of how stable the model is.
+
+\textbf{2.4 External-Data Ablation}
+
+\includegraphics[width=6.5in,height=4.02536in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image9.png}
+
+I compared two versions of the model using the same chronological
+validation setup: one using only the target history and one using the
+target together with the \textbf{10 external features}.
+
+The target-only model produced validation RMSEs between \textbf{81.07
+and 83.55} across the three seeds. Adding the external features reduced
+the validation RMSE to \textbf{52.48, 36.75, and 39.13} for seeds 42,
+123, and 2026 respectively.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1042}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3770}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.5188}}@{}}
+\toprule()
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Seed}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Target only RMSE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{With external data RMSE}
+\end{minipage} \\
+\midrule()
+\endhead
+42 & 83.55 & 52.48 \\
+123 & 82.37 & 36.75 \\
+2026 & 81.07 & 39.13 \\
+\bottomrule()
+\end{longtable}
+
+The improvement occurs for all three seeds, although the size of the
+improvement varies. Seed 123 gives the best result with external data,
+while seed 42 has the weakest external-data result. This suggests that
+the external features contain useful information for forecasting the
+target, but the model is still somewhat sensitive to its initialization.
+
+Since the external variables are available for the full forecast period,
+using them does not require access to the hidden target values.
+Therefore, they can be used for the final 168-point forecast without
+causing target leakage.
+
+\hypertarget{final-training-and-forecast}{%
+\subsubsection{2.5 Final Training and
+Forecast}\label{final-training-and-forecast}}
+
+\hypertarget{dlumsai651-deep-learning-for-space-time-and-graphsassignmentsdl4stg-pa1_prefinaldl4stg-pa1question-2---leaderboardreport_figurestask2_final_forecast.png}{%
+\subsubsection{\texorpdfstring{\protect\includegraphics[width=6.5in,height=3.21216in]{vertopal_f570899ccaa646ef956901acfa15b964/media/image10.png}}{D:\textbackslash LUMS\textbackslash AI651 Deep Learning for space, time and graphs\textbackslash Assignments\textbackslash DL4STG-PA1\_prefinal\textbackslash DL4STG-PA1\textbackslash Question 2 - Leaderboard\textbackslash report\_figures\textbackslash task2\_final\_forecast.png}}\label{dlumsai651-deep-learning-for-space-time-and-graphsassignmentsdl4stg-pa1_prefinaldl4stg-pa1question-2---leaderboardreport_figurestask2_final_forecast.png}}
+
+After comparing the models on the chronological validation split, I used
+the external-data version for the final forecast. The final training run
+used the full \textbf{43,656 observed target values} and the 10 external
+features. This produced \textbf{42,977 training windows} with the
+512-step context and 168-step prediction horizon.
+
+The final model was trained for \textbf{16 epochs}. Its best validation
+RMSE during the selected training run was \textbf{26.35} at epoch 16.
+After training on the full available history, the model generated
+exactly \textbf{168 predictions} for the hidden period.
+
+The forecast starts at time index \textbf{43,657} and ends at
+\textbf{43,824}, matching the required leaderboard range. The first five
+predicted values were approximately \textbf{30.94, 5.58, 15.42, 11.66,
+and 12.67}, while the last five were approximately \textbf{80.39, 79.36,
+78.01, 71.49, and 63.71}.
+
+\hypertarget{results-and-discussion}{%
+\subsubsection{2.6 Results and
+Discussion}\label{results-and-discussion}}
+
+The main result from the validation experiments is that adding the
+external features helped the model substantially. Across all three
+seeds, the external-data model had a lower validation RMSE than the
+target-only model. The best target-only RMSE was \textbf{81.07}, while
+the best result with external data was \textbf{36.75}.
+
+The different seeds did not give exactly the same results, which shows
+that the training process has some sensitivity to initialization.
+However, the improvement from using the external features was consistent
+across all three seeds.
+
+The final model was then trained using the complete observed target
+history and the available external data. It produced the required
+\textbf{168-point forecast} for indices \textbf{43657--43824}. The final
+submission passed the checks for length, ordering, NaN values, and
+infinite values.
+
+Overall, the experiments suggest that the external variables provide
+useful information that is not captured by the target history alone. The
+decomposition and delay-based dependency mechanism also match the
+structure of the data, which has strong short-lag correlation and
+repeating patterns. The validation results were used to guide the final
+model choice, while the hidden 168-point period was only used for the
+final forecast.
+
+\hypertarget{ai-disclosure}{%
+\subsubsection{AI Disclosure:}\label{ai-disclosure}}
+
+\hypertarget{ai-has-been-used-for-error-solving.-i-also-used-it-to-guide-me-step-by-step-how-i-could-run-my-notebooks-on-colab-resume-the-training-if-the-session-stopped-saving-checkpoints-etc.-ai-was-also-used-to-polish-my-answers-for-the-report-providing-it-with-my-results-and-my-analysisanswer.}{%
+\subsubsection{\texorpdfstring{AI has been used for error solving. I
+also used it to guide me step by step how I could run my notebooks on
+colab, resume the training if the session stopped, saving checkpoints
+etc. AI was also used to polish my answers for the report, providing it
+with my results and my analysis/answer.
+}{AI has been used for error solving. I also used it to guide me step by step how I could run my notebooks on colab, resume the training if the session stopped, saving checkpoints etc. AI was also used to polish my answers for the report, providing it with my results and my analysis/answer. }}\label{ai-has-been-used-for-error-solving.-i-also-used-it-to-guide-me-step-by-step-how-i-could-run-my-notebooks-on-colab-resume-the-training-if-the-session-stopped-saving-checkpoints-etc.-ai-was-also-used-to-polish-my-answers-for-the-report-providing-it-with-my-results-and-my-analysisanswer.}}
+
+\end{document}
